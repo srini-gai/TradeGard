@@ -132,6 +132,24 @@ export interface AlertsResponse {
   alerts: Alert[]
 }
 
+export interface Nifty500Symbol {
+  symbol: string
+  label: string
+}
+
+export interface StockAnalysis {
+  qualified: boolean
+  symbol: string
+  current_price: number | null
+  rsi: number | null
+  ema20: number | null
+  volume_ratio: number | null
+  above_ema: boolean
+  confidence_score: number
+  reason: string
+  signal: Signal | null
+}
+
 export interface RiskStatus {
   trades_today: number
   max_trades: number

@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from 'react'
 import type { Signal } from '../types'
-import { getAllSignals, runScreener } from '../services/api'
+import { getAllSignals, runScreener, refreshNifty500 } from '../services/api'
 import SignalCard from '../components/SignalCard'
 import LogTradeModal from '../components/LogTradeModal'
+import StockSearchBox from '../components/StockSearchBox'
 
 export default function ScreenerPage() {
   const [signals, setSignals] = useState<Signal[]>([])
@@ -13,6 +14,8 @@ export default function ScreenerPage() {
   const [dirFilter, setDirFilter] = useState<'ALL' | 'CE' | 'PE'>('ALL')
   const [page, setPage] = useState(0)
   const PAGE_SIZE = 10
+  const [refreshing, setRefreshing] = useState(false)
+  const [refreshMsg, setRefreshMsg] = useState<string | null>(null)
 
   const load = useCallback(async () => {
     try {
@@ -24,7 +27,22 @@ export default function ScreenerPage() {
     }
   }, [page])
 
-  useEffect(() => { void load() }, [load])
+  useEffect(() => {
+    void load()
+  }, [load])
+
+  const handleRefreshList = async () => {
+    setRefreshing(true)
+    setRefreshMsg(null)
+    try {
+      const res = await refreshNifty500()
+      setRefreshMsg(`✓ ${res.message}`)
+    } catch {
+      setRefreshMsg('✗ Refresh failed — check if backend can reach niftyindices.com')
+    } finally {
+      setRefreshing(false)
+    }
+  }
 
   const handleRun = async () => {
     setRunning(true)
@@ -37,28 +55,72 @@ export default function ScreenerPage() {
     }
   }
 
-  const filtered = dirFilter === 'ALL'
-    ? signals
-    : signals.filter(s => s.direction === dirFilter)
+  const filtered =
+    dirFilter === 'ALL' ? signals : signals.filter((s) => s.direction === dirFilter)
 
   return (
     <div className="flex flex-col gap-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-semibold text-brand-text">Screener History</h1>
+          <h1 className="text-xl font-semibold text-brand-text">Screener</h1>
           <p className="text-xs text-brand-subtext mt-0.5">
-            All signals generated · {total} total
+            Nifty 50 daily screener · {total} signals in history
           </p>
         </div>
-        <button onClick={() => void handleRun()} disabled={running} className="btn-primary">
+        <button
+          onClick={() => void handleRun()}
+          disabled={running}
+          className="btn-primary"
+        >
           {running ? 'Scanning 50 stocks...' : '▶ Run screener'}
         </button>
       </div>
 
+      {/* Stock search — Nifty 500 */}
+      <div className="card">
+        <div className="flex items-center gap-2 mb-3 flex-wrap">
+          <span className="text-sm font-medium text-brand-text">
+            Analyse any Nifty 500 stock
+          </span>
+          <span className="text-xs bg-brand-accent/20 text-brand-accent px-2 py-0.5 rounded-full">
+            500 stocks
+          </span>
+          <button
+            onClick={() => void handleRefreshList()}
+            disabled={refreshing}
+            className="text-xs text-brand-muted hover:text-brand-subtext ml-auto"
+            title="Refresh from NSE official list"
+          >
+            {refreshing ? 'Refreshing...' : '↻ Refresh list'}
+          </button>
+        </div>
+        {refreshMsg && (
+          <div className={`text-xs px-2 py-1 rounded mb-3 ${
+            refreshMsg.startsWith('✓')
+              ? 'text-green-400 bg-green-900/20'
+              : 'text-red-400 bg-red-900/20'
+          }`}>
+            {refreshMsg}
+          </div>
+        )}
+        <div className="text-xs text-brand-subtext mb-3">
+          Search any stock — runs same RSI + EMA + volume analysis and gives
+          you a confidence score
+        </div>
+        <StockSearchBox />
+      </div>
+
+      {/* Divider */}
+      <div className="flex items-center gap-3">
+        <div className="flex-1 h-px bg-brand-border" />
+        <span className="text-xs text-brand-muted">Nifty 50 screener history</span>
+        <div className="flex-1 h-px bg-brand-border" />
+      </div>
+
       {/* Filters */}
       <div className="flex gap-1">
-        {(['ALL', 'CE', 'PE'] as const).map(f => (
+        {(['ALL', 'CE', 'PE'] as const).map((f) => (
           <button
             key={f}
             onClick={() => setDirFilter(f)}
@@ -75,33 +137,43 @@ export default function ScreenerPage() {
 
       {/* Signal cards */}
       {loading ? (
-        <div className="text-xs text-brand-muted text-center py-8">Loading...</div>
+        <div className="text-xs text-brand-muted text-center py-8">
+          Loading...
+        </div>
       ) : filtered.length === 0 ? (
         <div className="card text-center py-10">
           <div className="text-brand-subtext text-sm mb-2">No signals yet</div>
-          <div className="text-xs text-brand-muted">Click &quot;Run screener&quot; to generate signals</div>
+          <div className="text-xs text-brand-muted">
+            Click &quot;Run screener&quot; to generate signals
+          </div>
         </div>
       ) : (
         <>
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-            {filtered.map(s => (
+            {filtered.map((s) => (
               <SignalCard key={s.id} signal={s} onLogTrade={setLogSignal} />
             ))}
           </div>
           {/* Pagination */}
           <div className="flex items-center justify-between text-xs text-brand-subtext">
-            <span>Page {page + 1} of {Math.ceil(total / PAGE_SIZE) || 1}</span>
+            <span>
+              Page {page + 1} of {Math.ceil(total / PAGE_SIZE) || 1}
+            </span>
             <div className="flex gap-2">
               <button
-                onClick={() => setPage(p => Math.max(0, p - 1))}
+                onClick={() => setPage((p) => Math.max(0, p - 1))}
                 disabled={page === 0}
                 className="btn-ghost text-xs py-1"
-              >← Prev</button>
+              >
+                ← Prev
+              </button>
               <button
-                onClick={() => setPage(p => p + 1)}
+                onClick={() => setPage((p) => p + 1)}
                 disabled={(page + 1) * PAGE_SIZE >= total}
                 className="btn-ghost text-xs py-1"
-              >Next →</button>
+              >
+                Next →
+              </button>
             </div>
           </div>
         </>

@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import os
 from contextlib import asynccontextmanager
@@ -29,6 +30,15 @@ async def lifespan(app: FastAPI):
     # Startup
     init_db()
     logger.info("Database initialised")
+
+    # Pre-load Nifty 500 symbol cache (non-blocking)
+    try:
+        from data.nifty500 import get_nifty500_symbols
+        loop = asyncio.get_event_loop()
+        await loop.run_in_executor(None, get_nifty500_symbols)
+        logger.info("Nifty 500 symbol list loaded")
+    except Exception as e:
+        logger.warning(f"Nifty 500 pre-load failed: {e} — will load on first request")
 
     if _SCHEDULER_ENABLED:
         from app.services.screener_service import run_morning_screener

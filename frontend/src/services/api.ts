@@ -3,9 +3,11 @@ import type {
   AlertsResponse,
   BacktestSummaryResponse,
   MonthlySummary,
+  Nifty500Symbol,
   RiskStatus,
   ScreenerRunResponse,
   Signal,
+  StockAnalysis,
   Trade,
   TradeCreate,
 } from '../types'
@@ -83,6 +85,15 @@ export const getAllAlerts = (symbol?: string): Promise<AlertsResponse> =>
 
 export const sendTestWebhook = (payload: Record<string, unknown>) =>
   axios.post('/webhook/test', payload).then((r) => r.data)
+
+export const getNifty500Symbols = (): Promise<{ symbols: Nifty500Symbol[]; count: number }> =>
+  api.get('/screener/nifty500').then((r) => r.data)
+
+export const analyseSymbol = (symbol: string): Promise<StockAnalysis> =>
+  api.get(`/screener/analyse/${symbol}`).then((r) => r.data)
+
+export const refreshNifty500 = (): Promise<{ status: string; count: number; message: string }> =>
+  api.post('/screener/nifty500/refresh').then((r) => r.data)
 
 export const getPrice = (symbol: string) =>
   api.get(`/data/price/${symbol}`).then((r) => r.data)
