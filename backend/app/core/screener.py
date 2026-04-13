@@ -18,6 +18,7 @@ from app.core.indicators import (
 )
 from app.core.risk import MIN_SCORE, calculate_targets
 from app.services.data_fetcher import fetch_historical
+from app.services.upstox_client import get_options_chain_sync, is_upstox_configured
 from data.nifty50 import NIFTY50_SYMBOLS
 
 logger = logging.getLogger(__name__)
@@ -99,9 +100,39 @@ def score_symbol(symbol: str, ref_date: date | None = None) -> dict | None:
 
         today = ref_date or date.today()
         dte = days_to_expiry(today)
-        entry_premium = estimate_premium_bs(current_price, strike, direction, dte)
-        targets = calculate_targets(entry_premium)
         expiry = get_monthly_expiry(today)
+        expiry_str = expiry.isoformat()
+
+        # Try live Upstox premium; fall back to Black-Scholes if unavailable
+        entry_premium = None
+        premium_source = "black-scholes"
+
+        if is_upstox_configured() and ref_date is None:
+            try:
+                chain = get_options_chain_sync(symbol, expiry_str)
+                if chain and not chain.get("error"):
+                    # Prefer the premium for our computed strike; fall back to ATM
+                    ltp_key = "ce" if direction == "CE" else "pe"
+                    for row in chain.get("strikes", []):
+                        if row["strike"] == float(strike):
+                            ltp = row[ltp_key].get("ltp", 0)
+                            if ltp and ltp > 0:
+                                entry_premium = round(ltp, 2)
+                                premium_source = "upstox-live"
+                            break
+                    if entry_premium is None:
+                        # Strike not found — use ATM LTP
+                        atm_ltp = chain.get(f"atm_{direction.lower()}_ltp")
+                        if atm_ltp and atm_ltp > 0:
+                            entry_premium = round(atm_ltp, 2)
+                            premium_source = "upstox-atm"
+            except Exception as e:
+                logger.warning(f"Upstox premium fetch failed for {symbol}: {e} — using B-S")
+
+        if entry_premium is None:
+            entry_premium = estimate_premium_bs(current_price, strike, direction, dte)
+
+        targets = calculate_targets(entry_premium)
 
         return {
             "symbol": symbol.replace(".NS", ""),
@@ -110,6 +141,7 @@ def score_symbol(symbol: str, ref_date: date | None = None) -> dict | None:
             "strike": float(strike),
             "expiry": expiry,
             "entry_premium": entry_premium,
+            "premium_source": premium_source,
             "sl_premium": targets["sl"],
             "t1_premium": targets["t1"],
             "t2_premium": targets["t2"],

@@ -310,6 +310,20 @@ async def get_market_quote(symbol: str) -> dict | None:
         return None
 
 
+def get_options_chain_sync(symbol: str, expiry: str | None = None) -> dict | None:
+    """
+    Synchronous wrapper around get_options_chain.
+    Safe to call from sync FastAPI routes (which run in a thread pool with no
+    active event loop). Do NOT call from inside a running async event loop.
+    """
+    import asyncio
+    try:
+        return asyncio.run(get_options_chain(symbol, expiry))
+    except Exception as e:
+        logger.error(f"Sync options chain fetch failed for {symbol}: {e}")
+        return None
+
+
 def is_upstox_configured() -> bool:
     """Check if Upstox API credentials are set."""
     return bool(settings.upstox_access_token and settings.upstox_api_key)
