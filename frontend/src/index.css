@@ -1,0 +1,38 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  background-color: #0a0e1a;
+  color: #e2e8f0;
+  font-family: 'DM Sans', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+@layer components {
+  .card {
+    @apply bg-brand-card border border-brand-border rounded-xl p-4;
+  }
+  .badge-ce {
+    @apply bg-green-900/40 text-green-400 border border-green-800 text-xs px-2 py-0.5 rounded-full font-mono;
+  }
+  .badge-pe {
+    @apply bg-red-900/40 text-red-400 border border-red-800 text-xs px-2 py-0.5 rounded-full font-mono;
+  }
+  .badge-sl {
+    @apply bg-red-900/40 text-red-400 text-xs px-2 py-0.5 rounded-full;
+  }
+  .badge-open {
+    @apply bg-blue-900/40 text-blue-400 text-xs px-2 py-0.5 rounded-full;
+  }
+  .metric-card {
+    @apply bg-brand-surface border border-brand-border rounded-lg p-4;
+  }
+  .btn-primary {
+    @apply bg-brand-accent text-brand-bg font-medium px-4 py-2 rounded-lg hover:bg-brand-accent/90 transition-colors text-sm;
+  }
+  .btn-ghost {
+    @apply border border-brand-border text-brand-subtext px-4 py-2 rounded-lg hover:bg-brand-surface transition-colors text-sm;
+  }
+}
