@@ -30,20 +30,20 @@ function LadderRow({
   actionColor: string
 }) {
   return (
-    <div className="flex items-center gap-3 py-2 border-b border-brand-border last:border-0">
+    <div className="flex items-center gap-2 py-2 border-b border-brand-border last:border-0">
       <span
-        className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${dotColor}`}
+        className={`w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full flex-shrink-0 ${dotColor}`}
       />
-      <span className="text-brand-subtext text-xs w-16 flex-shrink-0">
+      <span className="text-brand-subtext text-xs w-10 sm:w-16 flex-shrink-0">
         {label}
       </span>
-      <div className="flex-1 h-px bg-brand-border" />
-      <div className="text-right min-w-[160px]">
-        <div className="font-mono text-sm font-medium text-brand-text">
+      <div className="flex-1 h-px bg-brand-border min-w-0" />
+      <div className="text-right min-w-[120px] sm:min-w-[160px]">
+        <div className="font-mono text-xs sm:text-sm font-medium text-brand-text">
           {price}
         </div>
         <div className="text-xs text-brand-subtext">{desc}</div>
-        <div className={`text-xs font-medium ${actionColor}`}>{action}</div>
+        <div className={`text-xs font-medium leading-tight ${actionColor}`}>{action}</div>
       </div>
     </div>
   )

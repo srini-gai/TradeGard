@@ -82,14 +82,15 @@ export default function LogTradeModal({ signal, onClose, onLogged }: Props) {
   const lbl = 'text-xs text-brand-subtext mb-1'
 
   return (
-    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-      <div className="bg-brand-card border border-brand-border rounded-xl p-6 w-full max-w-lg">
+    /* On mobile: slide up from bottom. On sm+: centered dialog. */
+    <div className="fixed inset-0 bg-black/60 flex items-end sm:items-center justify-center z-50 sm:p-4">
+      <div className="bg-brand-card border border-brand-border rounded-t-2xl sm:rounded-xl p-4 sm:p-6 w-full sm:max-w-lg max-h-[92vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-4">
           <div className="text-sm font-medium text-brand-text">Log trade</div>
           <button
             type="button"
             onClick={onClose}
-            className="text-brand-muted hover:text-brand-text text-lg"
+            className="text-brand-muted hover:text-brand-text text-lg p-1"
           >
             ✕
           </button>
@@ -143,7 +144,7 @@ export default function LogTradeModal({ signal, onClose, onLogged }: Props) {
             />
           </div>
           <div>
-            <div className={lbl}>Entry premium *</div>
+            <div className={lbl}>Entry ₹ *</div>
             <input
               className={inp}
               type="number"
@@ -153,7 +154,7 @@ export default function LogTradeModal({ signal, onClose, onLogged }: Props) {
             />
           </div>
           <div>
-            <div className={lbl}>SL premium *</div>
+            <div className={lbl}>SL ₹ *</div>
             <input
               className={inp}
               type="number"
@@ -202,7 +203,7 @@ export default function LogTradeModal({ signal, onClose, onLogged }: Props) {
               onChange={(e) => set('lots', +e.target.value)}
             />
           </div>
-          <div>
+          <div className="col-span-2">
             <div className={lbl}>Lot size (0 = auto)</div>
             <input
               className={inp}

@@ -8,11 +8,13 @@ body {
   color: #e2e8f0;
   font-family: 'DM Sans', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
+  /* Prevent horizontal scroll on mobile */
+  overflow-x: hidden;
 }
 
 @layer components {
   .card {
-    @apply bg-brand-card border border-brand-border rounded-xl p-4;
+    @apply bg-brand-card border border-brand-border rounded-xl p-3 sm:p-4;
   }
   .badge-ce {
     @apply bg-green-900/40 text-green-400 border border-green-800 text-xs px-2 py-0.5 rounded-full font-mono;
@@ -27,12 +29,12 @@ body {
     @apply bg-blue-900/40 text-blue-400 text-xs px-2 py-0.5 rounded-full;
   }
   .metric-card {
-    @apply bg-brand-surface border border-brand-border rounded-lg p-4;
+    @apply bg-brand-surface border border-brand-border rounded-lg p-2.5 sm:p-4;
   }
   .btn-primary {
-    @apply bg-brand-accent text-brand-bg font-medium px-4 py-2 rounded-lg hover:bg-brand-accent/90 transition-colors text-sm;
+    @apply bg-brand-accent text-brand-bg font-medium px-3 py-2 sm:px-4 rounded-lg hover:bg-brand-accent/90 transition-colors text-sm whitespace-nowrap;
   }
   .btn-ghost {
-    @apply border border-brand-border text-brand-subtext px-4 py-2 rounded-lg hover:bg-brand-surface transition-colors text-sm;
+    @apply border border-brand-border text-brand-subtext px-3 py-2 sm:px-4 rounded-lg hover:bg-brand-surface transition-colors text-sm whitespace-nowrap;
   }
 }

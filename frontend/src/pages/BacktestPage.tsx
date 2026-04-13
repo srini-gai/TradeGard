@@ -74,7 +74,7 @@ export default function BacktestPage() {
   return (
     <div className="flex flex-col gap-6">
       {/* Header */}
-      <div className="flex items-center justify-between flex-wrap gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h1 className="text-xl font-semibold text-brand-text">Backtesting</h1>
           <p className="text-xs text-brand-subtext mt-0.5">Simulate signals on historical data</p>
@@ -90,7 +90,7 @@ export default function BacktestPage() {
             <option value={3}>3 months</option>
           </select>
           <button onClick={() => void handleRun()} disabled={running} className="btn-primary">
-            {running ? `Running ${months}m backtest...` : `▶ Run ${months}m backtest`}
+            {running ? 'Running...' : `▶ Run ${months}m`}
           </button>
         </div>
       </div>
@@ -131,13 +131,18 @@ export default function BacktestPage() {
           </div>
           <div className="flex flex-col gap-0">
             {Object.entries(summary.monthly_breakdown).map(([month, stats]) => (
-              <div key={month} className="flex items-center justify-between py-2 border-b border-brand-border last:border-0 text-xs">
-                <span className="text-brand-text font-medium w-24">{month}</span>
-                <span className="text-brand-subtext">{stats.trades} trades</span>
+              <div
+                key={month}
+                className="grid grid-cols-2 sm:grid-cols-4 gap-x-3 gap-y-0.5 py-2 border-b border-brand-border last:border-0 text-xs items-center"
+              >
+                <span className="text-brand-text font-medium">{month}</span>
+                <span className="text-brand-subtext text-right sm:text-left">
+                  {stats.trades} trades
+                </span>
                 <span className={`font-mono ${stats.win_rate >= 50 ? 'text-green-400' : 'text-yellow-400'}`}>
                   {stats.win_rate}% wins
                 </span>
-                <span className={`font-mono ${stats.avg_pnl >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                <span className={`font-mono text-right sm:text-left ${stats.avg_pnl >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                   {stats.avg_pnl > 0 ? '+' : ''}{stats.avg_pnl}% avg
                 </span>
               </div>

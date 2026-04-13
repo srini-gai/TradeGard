@@ -57,29 +57,37 @@ export default function TradeRow({ trade, onUpdated }: Props) {
         : 'text-red-400'
 
   return (
-    <div className="bg-brand-surface border border-brand-border rounded-lg p-4 flex flex-col gap-3">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
+    <div className="bg-brand-surface border border-brand-border rounded-lg p-3 sm:p-4 flex flex-col gap-3">
+      {/* Header — wraps on narrow screens */}
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex items-center gap-1.5 flex-wrap min-w-0">
           <span className="font-mono font-medium text-sm text-brand-text">
             {trade.symbol}
           </span>
-          <span
-            className={trade.direction === 'CE' ? 'badge-ce' : 'badge-pe'}
-          >
+          <span className={trade.direction === 'CE' ? 'badge-ce' : 'badge-pe'}>
             {trade.direction}
           </span>
           <span className="text-xs text-brand-subtext font-mono">
-            ₹{trade.strike} · {trade.expiry}
+            ₹{trade.strike}
+          </span>
+          <span className="text-xs text-brand-muted hidden sm:inline">
+            · {trade.expiry}
           </span>
         </div>
         <span
-          className={`text-xs px-2 py-0.5 rounded-full ${statusBadge[trade.status] ?? ''}`}
+          className={`text-xs px-2 py-0.5 rounded-full flex-shrink-0 ${statusBadge[trade.status] ?? ''}`}
         >
           {trade.status.replace('_', ' ')}
         </span>
       </div>
 
-      <div className="grid grid-cols-5 gap-2 text-xs">
+      {/* Expiry on its own line for mobile */}
+      <div className="text-xs text-brand-muted sm:hidden">
+        Expiry: {trade.expiry}
+      </div>
+
+      {/* Metrics grid — 3 cols on mobile, 5 on sm+ */}
+      <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 text-xs">
         {[
           {
             label: 'Entry',
@@ -139,10 +147,8 @@ export default function TradeRow({ trade, onUpdated }: Props) {
               key={b.id}
               className="text-xs bg-brand-card border border-brand-border rounded px-2 py-1"
             >
-              <span className="text-brand-subtext">{b.level} booked @ </span>
-              <span className="font-mono text-brand-text">
-                ₹{b.exit_premium}
-              </span>
+              <span className="text-brand-subtext">{b.level} @ </span>
+              <span className="font-mono text-brand-text">₹{b.exit_premium}</span>
               <span
                 className={` ml-1 font-mono ${b.pnl >= 0 ? 'text-green-400' : 'text-red-400'}`}
               >
@@ -161,7 +167,7 @@ export default function TradeRow({ trade, onUpdated }: Props) {
             placeholder="Exit premium"
             value={exitPremium}
             onChange={(e) => setExitPremium(e.target.value)}
-            className="bg-brand-card border border-brand-border rounded px-3 py-1.5 text-xs text-brand-text w-36 focus:outline-none focus:border-brand-accent"
+            className="bg-brand-card border border-brand-border rounded px-3 py-1.5 text-xs text-brand-text w-32 sm:w-36 focus:outline-none focus:border-brand-accent"
           />
           {nextLevel && (
             <button

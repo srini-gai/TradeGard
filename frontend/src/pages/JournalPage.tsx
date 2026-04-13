@@ -54,7 +54,7 @@ export default function JournalPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h1 className="text-xl font-semibold text-brand-text">Trade Journal</h1>
           <p className="text-xs text-brand-subtext mt-0.5">
@@ -64,7 +64,7 @@ export default function JournalPage() {
         <button
           type="button"
           onClick={() => setShowModal(true)}
-          className="btn-primary"
+          className="btn-primary self-start sm:self-auto"
         >
           + Log trade
         </button>

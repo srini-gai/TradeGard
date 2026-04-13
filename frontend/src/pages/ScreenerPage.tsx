@@ -61,7 +61,7 @@ export default function ScreenerPage() {
   return (
     <div className="flex flex-col gap-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h1 className="text-xl font-semibold text-brand-text">Screener</h1>
           <p className="text-xs text-brand-subtext mt-0.5">
@@ -71,9 +71,9 @@ export default function ScreenerPage() {
         <button
           onClick={() => void handleRun()}
           disabled={running}
-          className="btn-primary"
+          className="btn-primary self-start sm:self-auto"
         >
-          {running ? 'Scanning 50 stocks...' : '▶ Run screener'}
+          {running ? 'Scanning...' : '▶ Run screener'}
         </button>
       </div>
 
