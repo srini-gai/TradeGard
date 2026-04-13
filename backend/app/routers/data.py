@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException
 
 from app.services.data_fetcher import fetch_current_price, fetch_historical
-from app.services.upstox_client import get_options_chain, is_upstox_configured
+from app.services.upstox_client import get_monthly_expiry, get_options_chain, is_upstox_configured
 from data.nifty50 import NIFTY50_SYMBOLS, NSE_SYMBOLS
 
 router = APIRouter(prefix="/api/data", tags=["data"])
@@ -39,10 +39,11 @@ def get_price(symbol: str):
 
 
 @router.get("/options/{symbol}")
-async def get_options(symbol: str, expiry: str):
+async def get_options(symbol: str, expiry: str | None = None):
     if not is_upstox_configured():
         raise HTTPException(status_code=503, detail="Upstox API not configured — check .env")
-    data = await get_options_chain(symbol.upper(), expiry)
+    expiry_date = expiry or get_monthly_expiry()
+    data = await get_options_chain(symbol.upper(), expiry_date)
     if not data:
         raise HTTPException(status_code=503, detail="Could not fetch options chain")
     return data
