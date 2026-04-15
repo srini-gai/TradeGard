@@ -3,6 +3,7 @@ import Layout from './components/Layout'
 import AlertsPage from './pages/AlertsPage'
 import BacktestPage from './pages/BacktestPage'
 import Dashboard from './pages/Dashboard'
+import IntradayPage from './pages/IntradayPage'
 import JournalPage from './pages/JournalPage'
 import ScreenerPage from './pages/ScreenerPage'
 
@@ -13,6 +14,7 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Dashboard />} />
           <Route path="/screener" element={<ScreenerPage />} />
+          <Route path="/intraday" element={<IntradayPage />} />
           <Route path="/backtest" element={<BacktestPage />} />
           <Route path="/journal" element={<JournalPage />} />
           <Route path="/alerts" element={<AlertsPage />} />

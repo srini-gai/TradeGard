@@ -4,6 +4,7 @@ import { NavLink } from 'react-router-dom'
 const navItems = [
   { to: '/', label: 'Dashboard', icon: '⬡' },
   { to: '/screener', label: 'Screener', icon: '◎' },
+  { to: '/intraday', label: 'Intraday', icon: '⚡' },
   { to: '/backtest', label: 'Backtest', icon: '◈' },
   { to: '/journal', label: 'Journal', icon: '◉' },
   { to: '/alerts', label: 'Alerts', icon: '◆' },

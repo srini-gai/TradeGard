@@ -8,7 +8,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.database import init_db
-from app.routers import alerts, backtest, data, journal, screener, webhook
+from app.routers import alerts, backtest, data, intraday, journal, screener, webhook
 
 logging.basicConfig(
     level=logging.INFO,
@@ -86,6 +86,7 @@ app.add_middleware(
 
 app.include_router(data.router)
 app.include_router(screener.router)
+app.include_router(intraday.router)
 app.include_router(backtest.router)
 app.include_router(journal.router)
 app.include_router(webhook.router)

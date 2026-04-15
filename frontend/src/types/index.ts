@@ -172,3 +172,41 @@ export interface RiskStatus {
   current_hour_ist: number
   reason: string
 }
+
+export interface IntradaySignal {
+  id: number
+  symbol: string
+  direction: 'CE' | 'PE'
+  strike: number
+  expiry: string
+  entry_premium: number
+  sl_premium: number
+  t1_premium: number
+  t2_premium: number
+  confidence_score: number
+  rationale: string[]
+  current_price: number | null
+  vwap: number | null
+  rsi: number | null
+  scan_time: string
+  timeframe: string
+  expiry_type: string
+  exit_by: string
+}
+
+export interface IntradayScanResponse {
+  status: string
+  signals_found: number
+  signals: IntradaySignal[]
+  scanned_at: string
+  timeframe: string
+  expiry_type: string
+}
+
+export interface IntradayStatus {
+  market_open: boolean
+  current_time_ist: string
+  scan_available: boolean
+  exit_cutoff: string
+  message: string
+}

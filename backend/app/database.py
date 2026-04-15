@@ -28,7 +28,7 @@ def get_db():
 
 def init_db():
     os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
-    from app.models import signal, trade, backtest, alert  # noqa: F401
+    from app.models import signal, trade, backtest, alert  # noqa: F401  (imports IntradaySignal too)
 
     Base.metadata.create_all(bind=engine)
     logger.info(f"Database initialised at {DB_PATH}")

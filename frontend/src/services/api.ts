@@ -2,6 +2,9 @@ import axios from 'axios'
 import type {
   AlertsResponse,
   BacktestSummaryResponse,
+  IntradayScanResponse,
+  IntradaySignal,
+  IntradayStatus,
   MonthlySummary,
   Nifty500Symbol,
   RiskStatus,
@@ -105,3 +108,15 @@ export const getStrikes = (symbol: string, expiry?: string): Promise<StrikesResp
   api
     .get(`/data/strikes/${symbol}${expiry ? `?expiry=${expiry}` : ''}`)
     .then((r) => r.data)
+
+export const scanIntraday = (): Promise<IntradayScanResponse> =>
+  api.post('/intraday/scan').then((r) => r.data)
+
+export const getTodayIntradaySignals = (): Promise<{
+  date: string
+  count: number
+  signals: IntradaySignal[]
+}> => api.get('/intraday/signals/today').then((r) => r.data)
+
+export const getIntradayStatus = (): Promise<IntradayStatus> =>
+  api.get('/intraday/status').then((r) => r.data)
