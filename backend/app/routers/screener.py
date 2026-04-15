@@ -62,21 +62,26 @@ def get_today_signals(db: Session = Depends(get_db)):
 def get_all_signals(
     limit: int = 20,
     skip: int = 0,
+    min_score: int = 0,
     db: Session = Depends(get_db),
 ):
-    """Return all past signals paginated."""
+    """Return all past signals paginated, optionally filtered by min confidence score."""
+    query = db.query(Signal)
+    if min_score > 0:
+        query = query.filter(Signal.confidence_score >= min_score)
     signals = (
-        db.query(Signal)
+        query
         .order_by(Signal.signal_date.desc(), Signal.confidence_score.desc())
         .offset(skip)
         .limit(limit)
         .all()
     )
-    total = db.query(Signal).count()
+    total = query.count()
     return {
         "total": total,
         "limit": limit,
         "skip": skip,
+        "min_score": min_score,
         "signals": [SignalResponse.model_validate(s).model_dump() for s in signals],
     }
 

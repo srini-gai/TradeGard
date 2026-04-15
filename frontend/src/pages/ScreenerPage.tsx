@@ -12,6 +12,7 @@ export default function ScreenerPage() {
   const [logSignal, setLogSignal] = useState<Signal | null>(null)
   const [loading, setLoading] = useState(true)
   const [dirFilter, setDirFilter] = useState<'ALL' | 'CE' | 'PE'>('ALL')
+  const [minScore, setMinScore] = useState(70)
   const [page, setPage] = useState(0)
   const PAGE_SIZE = 10
   const [refreshing, setRefreshing] = useState(false)
@@ -19,13 +20,13 @@ export default function ScreenerPage() {
 
   const load = useCallback(async () => {
     try {
-      const res = await getAllSignals(PAGE_SIZE, page * PAGE_SIZE)
+      const res = await getAllSignals(PAGE_SIZE, page * PAGE_SIZE, minScore)
       setSignals(res.signals ?? [])
       setTotal(res.total ?? 0)
     } finally {
       setLoading(false)
     }
-  }, [page])
+  }, [page, minScore])
 
   useEffect(() => {
     void load()
@@ -53,6 +54,12 @@ export default function ScreenerPage() {
     } finally {
       setRunning(false)
     }
+  }
+
+  const handleMinScoreChange = (score: number) => {
+    setMinScore(score)
+    setPage(0)
+    setLoading(true)
   }
 
   const filtered =
@@ -118,7 +125,31 @@ export default function ScreenerPage() {
         <div className="flex-1 h-px bg-brand-border" />
       </div>
 
-      {/* Filters */}
+      {/* Confidence score filter */}
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-xs text-brand-subtext font-medium">Min confidence:</span>
+          {([0, 60, 70, 80, 90] as const).map((score) => (
+            <button
+              key={score}
+              onClick={() => handleMinScoreChange(score)}
+              className={`text-xs px-3 py-1.5 rounded-lg transition-colors ${
+                minScore === score
+                  ? 'bg-brand-accent/20 text-brand-accent border border-brand-accent/30'
+                  : 'text-brand-subtext hover:text-brand-text hover:bg-brand-surface'
+              }`}
+            >
+              {score === 0 ? 'All' : `${score}+`}
+            </button>
+          ))}
+          <span className="text-xs text-brand-muted ml-auto">
+            {total} signal{total !== 1 ? 's' : ''}
+            {minScore > 0 ? ` ≥ ${minScore}` : ''}
+          </span>
+        </div>
+      </div>
+
+      {/* Direction filters */}
       <div className="flex gap-1">
         {(['ALL', 'CE', 'PE'] as const).map((f) => (
           <button

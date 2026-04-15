@@ -150,6 +150,19 @@ export interface StockAnalysis {
   signal: Signal | null
 }
 
+export interface StrikeData {
+  strike: number
+  ce_ltp: number
+  pe_ltp: number
+}
+
+export interface StrikesResponse {
+  symbol: string
+  expiry: string
+  atm_strike: number | null
+  strikes: StrikeData[]
+}
+
 export interface RiskStatus {
   trades_today: number
   max_trades: number

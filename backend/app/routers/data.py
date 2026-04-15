@@ -49,6 +49,37 @@ async def get_options(symbol: str, expiry: str | None = None):
     return data
 
 
+@router.get("/strikes/{symbol}")
+async def get_strikes(symbol: str, expiry: str | None = None):
+    """
+    Return available strikes with CE and PE LTP for the given symbol.
+    Response: {"symbol": "RELIANCE", "expiry": "2026-04-28", "atm_strike": 1320,
+               "strikes": [{"strike": 1300, "ce_ltp": 45.2, "pe_ltp": 12.1}, ...]}
+    """
+    if not is_upstox_configured():
+        raise HTTPException(status_code=503, detail="Upstox API not configured — check .env")
+    expiry_date = expiry or get_monthly_expiry()
+    data = await get_options_chain(symbol.upper(), expiry_date)
+    if not data or data.get("error"):
+        raise HTTPException(status_code=503, detail="Could not fetch options chain")
+
+    strikes = [
+        {
+            "strike": row["strike"],
+            "ce_ltp": row["ce"]["ltp"],
+            "pe_ltp": row["pe"]["ltp"],
+        }
+        for row in data.get("strikes", [])
+    ]
+
+    return {
+        "symbol": data["symbol"],
+        "expiry": data["expiry"],
+        "atm_strike": data.get("atm_strike"),
+        "strikes": strikes,
+    }
+
+
 @router.post("/refresh")
 def refresh_data():
     """Trigger a background data refresh for all symbols."""

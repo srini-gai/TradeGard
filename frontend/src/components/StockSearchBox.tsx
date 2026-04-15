@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import type { Nifty500Symbol, StockAnalysis, Signal } from '../types'
-import { getNifty500Symbols, analyseSymbol } from '../services/api'
+import type { Nifty500Symbol, StockAnalysis, Signal, StrikeData } from '../types'
+import { getNifty500Symbols, analyseSymbol, getStrikes } from '../services/api'
 import SignalCard from './SignalCard'
 import LogTradeModal from './LogTradeModal'
 
@@ -33,6 +33,14 @@ export default function StockSearchBox() {
   const [error, setError] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
+
+  // Strike selector state
+  const [strikes, setStrikes] = useState<StrikeData[]>([])
+  const [strikesExpiry, setStrikesExpiry] = useState<string | null>(null)
+  const [selectedStrike, setSelectedStrike] = useState<number | null>(null)
+  const [selectedDirection, setSelectedDirection] = useState<'CE' | 'PE'>('CE')
+  const [strikesLoading, setStrikesLoading] = useState(false)
+  const [customSignal, setCustomSignal] = useState<Signal | null>(null)
 
   useEffect(() => {
     getNifty500Symbols()
@@ -69,15 +77,57 @@ export default function StockSearchBox() {
     return () => document.removeEventListener('mousedown', handler)
   }, [])
 
+  const buildCustomSignal = useCallback(
+    (base: Signal, strike: number, direction: 'CE' | 'PE', strikesData: StrikeData[]): Signal => {
+      const row = strikesData.find((s) => s.strike === strike)
+      const ltp = row ? (direction === 'CE' ? row.ce_ltp : row.pe_ltp) : base.entry_premium
+      const entry = ltp || base.entry_premium
+      return {
+        ...base,
+        strike,
+        direction,
+        entry_premium: entry,
+        sl_premium: parseFloat((entry * 0.6).toFixed(2)),   // -40%
+        t1_premium: parseFloat((entry * 1.38).toFixed(2)),  // +38%
+        t2_premium: parseFloat((entry * 1.79).toFixed(2)),  // +79%
+        t3_premium: parseFloat((entry * 2.14).toFixed(2)),  // +114%
+      }
+    },
+    [],
+  )
+
   const handleSelect = useCallback(async (symbol: string) => {
     setQuery(symbol)
     setShowDropdown(false)
     setResult(null)
     setError(null)
+    setStrikes([])
+    setStrikesExpiry(null)
+    setSelectedStrike(null)
+    setCustomSignal(null)
     setAnalysing(true)
     try {
       const analysis = await analyseSymbol(symbol)
       setResult(analysis)
+
+      if (analysis.qualified && analysis.signal) {
+        const dir: 'CE' | 'PE' = analysis.signal.direction ?? 'CE'
+        setSelectedDirection(dir)
+        // Fetch strikes in background — don't block showing the result
+        setStrikesLoading(true)
+        getStrikes(symbol)
+          .then((res) => {
+            setStrikes(res.strikes)
+            setStrikesExpiry(res.expiry)
+            const atm = res.atm_strike ?? analysis.signal!.strike
+            setSelectedStrike(atm)
+            setCustomSignal(buildCustomSignal(analysis.signal!, atm, dir, res.strikes))
+          })
+          .catch(() => {
+            // Upstox not configured — fall back silently
+          })
+          .finally(() => setStrikesLoading(false))
+      }
     } catch (e: unknown) {
       const detail = (e as { response?: { data?: { detail?: string } } })
         ?.response?.data?.detail
@@ -85,7 +135,21 @@ export default function StockSearchBox() {
     } finally {
       setAnalysing(false)
     }
-  }, [])
+  }, [buildCustomSignal])
+
+  const handleStrikeChange = (strike: number) => {
+    setSelectedStrike(strike)
+    if (result?.signal) {
+      setCustomSignal(buildCustomSignal(result.signal, strike, selectedDirection, strikes))
+    }
+  }
+
+  const handleDirectionChange = (dir: 'CE' | 'PE') => {
+    setSelectedDirection(dir)
+    if (result?.signal && selectedStrike !== null) {
+      setCustomSignal(buildCustomSignal(result.signal, selectedStrike, dir, strikes))
+    }
+  }
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && filtered.length > 0) {
@@ -98,6 +162,10 @@ export default function StockSearchBox() {
     setQuery('')
     setResult(null)
     setError(null)
+    setStrikes([])
+    setStrikesExpiry(null)
+    setSelectedStrike(null)
+    setCustomSignal(null)
   }
 
   return (
@@ -290,6 +358,76 @@ export default function StockSearchBox() {
             </div>
           </div>
 
+          {/* Strike selector — shown when qualified and strikes available */}
+          {result.qualified && result.signal && (
+            <div className="card flex flex-col gap-3">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <span className="text-xs font-medium text-brand-subtext uppercase tracking-wider">
+                  Strike &amp; Direction
+                </span>
+                {strikesExpiry && (
+                  <span className="text-xs text-brand-muted">Expiry: {strikesExpiry}</span>
+                )}
+              </div>
+
+              {/* CE / PE toggle */}
+              <div className="flex gap-1">
+                {(['CE', 'PE'] as const).map((d) => (
+                  <button
+                    key={d}
+                    onClick={() => handleDirectionChange(d)}
+                    className={`text-xs px-4 py-1.5 rounded-lg font-mono transition-colors ${
+                      selectedDirection === d
+                        ? d === 'CE'
+                          ? 'bg-green-900/40 text-green-400 border border-green-700'
+                          : 'bg-red-900/40 text-red-400 border border-red-700'
+                        : 'text-brand-subtext hover:text-brand-text hover:bg-brand-surface border border-transparent'
+                    }`}
+                  >
+                    {d}
+                  </button>
+                ))}
+              </div>
+
+              {/* Strike dropdown */}
+              {strikesLoading ? (
+                <div className="text-xs text-brand-muted animate-pulse">
+                  Loading strikes from Upstox…
+                </div>
+              ) : strikes.length > 0 ? (
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs text-brand-muted">Strike price</label>
+                  <select
+                    value={selectedStrike ?? ''}
+                    onChange={(e) => handleStrikeChange(Number(e.target.value))}
+                    className="bg-brand-surface border border-brand-border text-brand-text text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-brand-accent font-mono"
+                  >
+                    {strikes.map((s) => (
+                      <option key={s.strike} value={s.strike}>
+                        {s.strike} — CE ₹{s.ce_ltp.toFixed(1)} / PE ₹{s.pe_ltp.toFixed(1)}
+                        {s.strike === (result.signal ? result.signal.strike : null) ? ' (ATM)' : ''}
+                      </option>
+                    ))}
+                  </select>
+                  {selectedStrike !== null && (
+                    <div className="text-xs text-brand-muted mt-0.5">
+                      {selectedDirection} LTP:{' '}
+                      <span className="font-mono text-brand-text">
+                        ₹{(strikes.find((s) => s.strike === selectedStrike)?.[selectedDirection === 'CE' ? 'ce_ltp' : 'pe_ltp'] ?? 0).toFixed(1)}
+                      </span>
+                      {' · '}premiums recalculated below
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="text-xs text-brand-muted">
+                  Strike data unavailable — Upstox not configured or market closed.
+                  Showing default ATM values.
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Signal card if qualified */}
           {result.qualified && result.signal && (
             <div>
@@ -297,7 +435,11 @@ export default function StockSearchBox() {
                 Trade signal
               </div>
               <SignalCard
-                signal={{ ...result.signal, id: result.signal.id ?? 0 } as Signal}
+                signal={
+                  customSignal
+                    ? { ...customSignal, id: customSignal.id ?? 0 }
+                    : ({ ...result.signal, id: result.signal.id ?? 0 } as Signal)
+                }
                 onLogTrade={setLogSignal}
               />
             </div>

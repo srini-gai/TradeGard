@@ -8,6 +8,7 @@ import type {
   ScreenerRunResponse,
   Signal,
   StockAnalysis,
+  StrikesResponse,
   Trade,
   TradeCreate,
 } from '../types'
@@ -23,8 +24,10 @@ export const getTodaySignals = (): Promise<{
   signals: Signal[]
 }> => api.get('/screener/signals/today').then((r) => r.data)
 
-export const getAllSignals = (limit = 20, skip = 0) =>
-  api.get(`/screener/signals?limit=${limit}&skip=${skip}`).then((r) => r.data)
+export const getAllSignals = (limit = 20, skip = 0, minScore = 0) =>
+  api
+    .get(`/screener/signals?limit=${limit}&skip=${skip}${minScore > 0 ? `&min_score=${minScore}` : ''}`)
+    .then((r) => r.data)
 
 export const runBacktest = (months: number) =>
   api.post(`/backtest/run?months=${months}`).then((r) => r.data)
@@ -97,3 +100,8 @@ export const refreshNifty500 = (): Promise<{ status: string; count: number; mess
 
 export const getPrice = (symbol: string) =>
   api.get(`/data/price/${symbol}`).then((r) => r.data)
+
+export const getStrikes = (symbol: string, expiry?: string): Promise<StrikesResponse> =>
+  api
+    .get(`/data/strikes/${symbol}${expiry ? `?expiry=${expiry}` : ''}`)
+    .then((r) => r.data)
