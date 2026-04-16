@@ -27,7 +27,7 @@ export default function ScreenerPage() {
       for (const s of raw) {
         const key = `${s.symbol}|${s.direction}`
         const existing = seen.get(key)
-        if (!existing || s.id > existing.id) seen.set(key, s)
+        if (!existing || (s.id ?? 0) > (existing.id ?? 0)) seen.set(key, s)
       }
       setSignals(Array.from(seen.values()))
       setTotal(res.total ?? 0)
