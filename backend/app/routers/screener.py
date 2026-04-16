@@ -29,6 +29,10 @@ def run_screener_now(db: Session = Depends(get_db)):
     logger.info("Manual screener run triggered")
     try:
         signals = _run()
+        today = date.today()
+        deleted = db.query(Signal).filter(Signal.signal_date == today).delete()
+        db.commit()
+        logger.info(f"Cleared {deleted} existing signal(s) for {today} before inserting new ones")
         save_signals(signals, db)
         return ScreenerRunResponse(
             status="complete",

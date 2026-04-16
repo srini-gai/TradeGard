@@ -21,7 +21,15 @@ export default function ScreenerPage() {
   const load = useCallback(async () => {
     try {
       const res = await getAllSignals(PAGE_SIZE, page * PAGE_SIZE, minScore)
-      setSignals(res.signals ?? [])
+      const raw: Signal[] = res.signals ?? []
+      // Deduplicate by symbol+direction — keep the entry with the highest id
+      const seen = new Map<string, Signal>()
+      for (const s of raw) {
+        const key = `${s.symbol}|${s.direction}`
+        const existing = seen.get(key)
+        if (!existing || s.id > existing.id) seen.set(key, s)
+      }
+      setSignals(Array.from(seen.values()))
       setTotal(res.total ?? 0)
     } finally {
       setLoading(false)
