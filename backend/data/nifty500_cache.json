@@ -32,7 +32,6 @@
     "AFCONS",
     "AFFLE",
     "AJANTPHARM",
-    "AKZOINDIA",
     "ALKEM",
     "ABDL",
     "ARE&M",
@@ -262,6 +261,7 @@
     "JKTYRE",
     "JMFINANCIL",
     "JSWCEMENT",
+    "JSWDULUX",
     "JSWENERGY",
     "JSWINFRA",
     "JSWSTEEL",
@@ -501,6 +501,6 @@
     "ZYDUSWELL",
     "ECLERX"
   ],
-  "fetched_at": 1776064423.3530989,
+  "fetched_at": 1776275774.879648,
   "count": 500
 }
