@@ -81,20 +81,32 @@ def _last_trading_day() -> date:
     return today
 
 
+def _previous_trading_day(d: date) -> date:
+    """Returns the most recent trading day before d (skips weekends)."""
+    prev = d - timedelta(days=1)
+    while prev.weekday() >= 5:
+        prev -= timedelta(days=1)
+    return prev
+
+
 async def fetch_30min_candles(
     instrument_key: str, trade_date: date | None = None
 ) -> pd.DataFrame:
     """
     Fetch 30-min OHLCV candles from Upstox for a given instrument.
+    Fetches yesterday + today to ensure >= 10 candles even early morning.
     Returns DataFrame with columns: timestamp, open, high, low, close, volume, oi
     Empty DataFrame on failure.
     """
-    trade_date = trade_date or _last_trading_day()
-    date_str = trade_date.strftime("%Y-%m-%d")
+    end_date = trade_date or _last_trading_day()
+    start_date = _previous_trading_day(end_date)
+
+    end_str = end_date.strftime("%Y-%m-%d")
+    start_str = start_date.strftime("%Y-%m-%d")
 
     # URL-encode the pipe character in instrument key
     encoded_key = instrument_key.replace("|", "%7C")
-    url = f"{BASE_URL}/historical-candle/{encoded_key}/30minute/{date_str}/{date_str}"
+    url = f"{BASE_URL}/historical-candle/{encoded_key}/30minute/{end_str}/{start_str}"
 
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:

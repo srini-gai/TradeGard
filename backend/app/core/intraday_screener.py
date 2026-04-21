@@ -8,8 +8,6 @@ from app.core.indicators import (
     calculate_rsi,
     calculate_volume_ratio,
     estimate_premium_bs,
-    is_bearish_rsi,
-    is_bullish_rsi,
 )
 from app.core.risk import (
     calculate_intraday_targets,
@@ -24,7 +22,7 @@ from app.services.upstox_intraday import (
 
 logger = logging.getLogger(__name__)
 IST = ZoneInfo("Asia/Kolkata")
-MIN_SCORE = 60
+MIN_SCORE = 50
 MAX_SIGNALS = 2
 
 
@@ -52,53 +50,64 @@ async def score_symbol_intraday(symbol: str, instrument_key: str) -> dict | None
         if rsi < 0 or ema9 < 0:
             return None
 
-        # Direction: price vs VWAP AND EMA crossover must agree
+        # Fix 2: Determine direction — VWAP takes priority; EMA used as fallback/bonus
         above_vwap = current_price > vwap if vwap > 0 else None
         ema_bullish = ema9 > ema21
 
-        if above_vwap is True and ema_bullish:
-            direction = "CE"
-        elif above_vwap is False and not ema_bullish:
-            direction = "PE"
-        else:
-            return None  # Mixed signals — skip
-
-        score = 30  # base for clear trend alignment
+        score = 30  # base for having a deterministic direction
         rationale: list[str] = []
 
-        # VWAP filter — 25 points
+        if above_vwap is True and ema_bullish:
+            direction = "CE"
+            score += 10  # agreement bonus
+            rationale.append(f"VWAP+EMA agree bullish ({vwap:.0f})")
+        elif above_vwap is False and not ema_bullish:
+            direction = "PE"
+            score += 10  # agreement bonus
+            rationale.append(f"VWAP+EMA agree bearish ({vwap:.0f})")
+        elif above_vwap is True:
+            direction = "CE"  # VWAP wins, no bonus
+            rationale.append(f"Above VWAP ({vwap:.0f}), EMA mixed")
+        elif above_vwap is False:
+            direction = "PE"  # VWAP wins, no bonus
+            rationale.append(f"Below VWAP ({vwap:.0f}), EMA mixed")
+        else:
+            # vwap=0, use EMA only
+            direction = "CE" if ema_bullish else "PE"
+            rationale.append(f"EMA-based direction: {direction}")
+
+        # Fix 1: RSI — partial points, only reject extreme opposite
         if direction == "CE":
-            score += 25
-            rationale.append(f"Above VWAP ({vwap:.0f})")
-        else:
-            score += 25
-            rationale.append(f"Below VWAP ({vwap:.0f})")
+            if rsi < 35:
+                return None  # extreme bearish RSI for CE — skip
+            elif rsi > 50:
+                score += 25
+                rationale.append(f"RSI {rsi:.1f} bullish")
+            elif rsi >= 45:
+                score += 15
+                rationale.append(f"RSI {rsi:.1f} neutral-bullish")
+            # else 0 pts — RSI weak but not extreme
+        else:  # PE
+            if rsi > 65:
+                return None  # extreme bullish RSI for PE — skip
+            elif rsi < 50:
+                score += 25
+                rationale.append(f"RSI {rsi:.1f} bearish")
+            elif rsi <= 55:
+                score += 15
+                rationale.append(f"RSI {rsi:.1f} neutral-bearish")
+            # else 0 pts
 
-        # RSI filter — 25 points (mandatory)
-        if direction == "CE" and is_bullish_rsi(rsi):
-            score += 25
-            rationale.append(f"RSI {rsi} bullish")
-        elif direction == "PE" and is_bearish_rsi(rsi):
-            score += 25
-            rationale.append(f"RSI {rsi} bearish")
-        else:
-            return None  # RSI not confirming direction
-
-        # Volume filter — up to 20 points
-        if vol_ratio >= 1.5:
+        # Fix 3: Volume — tiered, no hard reject
+        if vol_ratio >= 1.2:
             score += 20
-            rationale.append(f"Volume surge {vol_ratio}x")
-        elif vol_ratio >= 1.2:
+            rationale.append(f"Volume surge {vol_ratio:.2f}x")
+        elif vol_ratio >= 1.0:
             score += 10
-            rationale.append(f"Volume elevated {vol_ratio}x")
-
-        # EMA crossover bonus — 10 points
-        if direction == "CE":
-            score += 10
-            rationale.append(f"EMA9 > EMA21 (bullish cross)")
-        else:
-            score += 10
-            rationale.append(f"EMA9 < EMA21 (bearish cross)")
+            rationale.append(f"Volume elevated {vol_ratio:.2f}x")
+        elif vol_ratio >= 0.8:
+            score += 5
+            rationale.append(f"Volume normal {vol_ratio:.2f}x")
 
         if score < MIN_SCORE:
             return None
