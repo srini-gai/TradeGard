@@ -99,14 +99,17 @@ async def fetch_30min_candles(
     Empty DataFrame on failure.
     """
     end_date = trade_date or _last_trading_day()
-    start_date = _previous_trading_day(end_date)
+    # Go back 5 calendar days — covers weekends + holidays, guarantees 10-15 candles
+    start_date = end_date - timedelta(days=5)
 
     end_str = end_date.strftime("%Y-%m-%d")
     start_str = start_date.strftime("%Y-%m-%d")
 
     # URL-encode the pipe character in instrument key
     encoded_key = instrument_key.replace("|", "%7C")
+    # Upstox URL order is reversed: to_date (end) before from_date (start)
     url = f"{BASE_URL}/historical-candle/{encoded_key}/30minute/{end_str}/{start_str}"
+    logger.info(f"Fetching candles URL: {url}")
 
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:

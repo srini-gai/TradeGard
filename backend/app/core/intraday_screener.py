@@ -33,6 +33,9 @@ async def score_symbol_intraday(symbol: str, instrument_key: str) -> dict | None
     """
     try:
         df = await fetch_30min_candles(instrument_key)
+        logger.info(
+            f"{symbol}: got {len(df)} candles, last close={df['close'].iloc[-1] if not df.empty else 'EMPTY'}"
+        )
         if df.empty or len(df) < 10:
             return None
 
